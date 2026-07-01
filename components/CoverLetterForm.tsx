@@ -5,6 +5,15 @@ import OutputCard from './OutputCard'
 
 const TONES = ['Professional', 'Friendly', 'Bold']
 
+// ─── Auto current date ─────────────────────────────
+const getCurrentDate = () => {
+  return new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
 export default function CoverLetterForm() {
   const [jobTitle, setJobTitle] = useState('')
   const [companyName, setCompanyName] = useState('')
@@ -26,7 +35,16 @@ export default function CoverLetterForm() {
       const res = await fetch('/api/cover-letter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobTitle, companyName, jobDescription, yourName, experience, whyCompany, tone }),
+        body: JSON.stringify({
+          jobTitle,
+          companyName,
+          jobDescription,
+          yourName,
+          experience,
+          whyCompany,
+          tone,
+          currentDate: getCurrentDate(), // ← auto inject
+        }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Something went wrong.'); return }
@@ -78,7 +96,8 @@ export default function CoverLetterForm() {
             Job Description <span className="text-red-500">*</span>
           </label>
           <span className={`text-xs ${jobDescription.length < 50 ? 'text-red-400' : 'text-[#6B7280]'}`}>
-            {jobDescription.length} chars {jobDescription.length < 50 ? `(need ${50 - jobDescription.length} more)` : '✓'}
+            {jobDescription.length} chars{' '}
+            {jobDescription.length < 50 ? `(need ${50 - jobDescription.length} more)` : '✓'}
           </span>
         </div>
         <textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value)}
@@ -91,7 +110,8 @@ export default function CoverLetterForm() {
       {/* Experience */}
       <div>
         <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
-          Your Experience <span className="text-[#6B7280] font-normal">(optional)</span>
+          Your Experience{' '}
+          <span className="text-[#6B7280] font-normal">(optional)</span>
         </label>
         <input type="text" value={experience} onChange={(e) => setExperience(e.target.value)}
           placeholder="e.g. 3 years in React, built 10+ production apps"
@@ -102,7 +122,8 @@ export default function CoverLetterForm() {
       {/* Why Company */}
       <div>
         <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
-          Why This Company? <span className="text-[#6B7280] font-normal">(recommended)</span>
+          Why This Company?{' '}
+          <span className="text-[#6B7280] font-normal">(recommended)</span>
         </label>
         <input type="text" value={whyCompany} onChange={(e) => setWhyCompany(e.target.value)}
           placeholder="e.g. Their open-source contributions to React ecosystem"
@@ -128,6 +149,12 @@ export default function CoverLetterForm() {
         </div>
       </div>
 
+      {/* Current date preview */}
+      <div className="flex items-center gap-2 text-xs text-[#6B7280] bg-gray-50 rounded-lg px-3 py-2 border border-[#E5E7EB]">
+        <span>📅</span>
+        <span>Cover letter date will be: <strong>{getCurrentDate()}</strong></span>
+      </div>
+
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
@@ -142,7 +169,12 @@ export default function CoverLetterForm() {
         {isLoading ? 'Generating...' : '✨ Generate Cover Letter'}
       </button>
 
-      <OutputCard output={output} type="cover-letter" isLoading={isLoading} onRegenerate={handleSubmit} />
+      <OutputCard
+        output={output}
+        type="cover-letter"
+        isLoading={isLoading}
+        onRegenerate={handleSubmit}
+      />
     </div>
   )
 }

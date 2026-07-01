@@ -15,9 +15,9 @@ export async function POST(req: NextRequest) {
       experience,
       whyCompany,
       tone,
+      currentDate,
     } = body
 
-    // ─── Validation ───────────────────────────────────
     if (!jobDescription || jobDescription.trim().length < 50) {
       return NextResponse.json(
         { error: 'Job description must be at least 50 characters.' },
@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ─── Build User Prompt ────────────────────────────
     const userPrompt = `
 Generate a professional cover letter based on this information:
 
@@ -43,14 +42,16 @@ JOB DETAILS:
 
 APPLICANT DETAILS:
 - Full Name: ${yourName}
+- Date: ${currentDate || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
 - Years of Experience: ${experience || 'Not specified'}
 - Why This Company: ${whyCompany || 'Not specified'}
 - Tone Preference: ${tone || 'Professional'}
 
+IMPORTANT: Use the exact date "${currentDate}" at the top of the letter. Do not use a placeholder like [Date].
+
 Write the cover letter now. Follow all rules exactly.
 `
 
-    // ─── Generate ─────────────────────────────────────
     const coverLetter = await addToQueue(() =>
       generateContent(COVER_LETTER_SYSTEM_PROMPT, userPrompt)
     )
