@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateContent } from '@/lib/router'
-import { COVER_LETTER_SYSTEM_PROMPT } from '@/lib/prompts'
+import { getCoverLetterSystemPrompt } from '@/lib/prompts'
 import { addToQueue } from '@/lib/rateLimit'
+
+// 🎯 Ensures this route is never cached
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,6 +35,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // 🎯 Generate the dynamic system prompt using the new v3 function
+    const systemPrompt = getCoverLetterSystemPrompt({
+      candidateName: yourName,
+      jobTitle: jobTitle,
+      companyName: companyName,
+    });
+
     const userPrompt = `
 Generate a professional cover letter based on this information:
 
@@ -53,7 +63,7 @@ Write the cover letter now. Follow all rules exactly.
 `
 
     const coverLetter = await addToQueue(() =>
-      generateContent(COVER_LETTER_SYSTEM_PROMPT, userPrompt)
+      generateContent(systemPrompt, userPrompt)
     )
 
     return NextResponse.json({ coverLetter })

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateContent } from '@/lib/router'
-import { EMAIL_SYSTEM_PROMPT } from '@/lib/prompts'
+import { getEmailSystemPrompt } from '@/lib/prompts'
 import { addToQueue } from '@/lib/rateLimit'
+
+// 🎯 Ensures this route is never cached
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,6 +43,13 @@ export async function POST(req: NextRequest) {
         ? attachments.join(', ')
         : 'Resume'
 
+    // 🎯 Generate the dynamic system prompt using the new v3 function
+    const systemPrompt = getEmailSystemPrompt({
+      referralName: referral,
+      applicantName: yourName,
+      jobTitle: jobTitle,
+    });
+
     // ─── Build User Prompt ────────────────────────────
     const userPrompt = `
 Generate a job application email based on this information:
@@ -70,7 +80,7 @@ Write the email now. Follow all rules exactly. Start with "Subject:" on the firs
 
     // ─── Generate ─────────────────────────────────────
     const email = await addToQueue(() =>
-      generateContent(EMAIL_SYSTEM_PROMPT, userPrompt)
+      generateContent(systemPrompt, userPrompt)
     )
 
     return NextResponse.json({ email })
