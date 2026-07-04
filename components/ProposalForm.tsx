@@ -7,7 +7,6 @@ import OutputCard from './OutputCard'
 const TONES = ['Professional', 'Friendly', 'Bold']
 const EXPERIENCE_LEVELS = ['Beginner', 'Intermediate', 'Expert']
 
-// ✅ Change 1 — targetRange prop accept karo
 interface ProposalFormProps {
   targetRange: 'short' | 'long'
 }
@@ -17,9 +16,16 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
   const [experience, setExperience] = useState('Intermediate')
   const [rateType, setRateType] = useState<'fixed' | 'hourly'>('hourly')
   const [rateValue, setRateValue] = useState('')
+  
+  // Naye States (Priority 4)
+  const [clientName, setClientName] = useState('')
+  const [includeLoom, setIncludeLoom] = useState(true)
+  const [includeGuarantee, setIncludeGuarantee] = useState(true)
+  
   const [jobDescription, setJobDescription] = useState('')
   const [pastExperience, setPastExperience] = useState('')
   const [tone, setTone] = useState('Professional')
+  
   const [output, setOutput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -46,12 +52,17 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           skill: skills.length > 0 ? skills.join(', ') : 'Not specified',
+          category: skills.length > 0 ? skills[0].toLowerCase().replace(/\s+/g, '-') : 'web-dev',
           experience,
           rate: getRateString(),
           jobDescription,
           pastExperience,
           tone,
-          targetRange, // ✅ Change 2 — API ko pass karo
+          targetRange,
+          // 👈 Naye parameters backend ko bhej rahe hain
+          clientName,
+          includeLoom,
+          includeGuarantee
         }),
       })
       const data = await res.json()
@@ -90,7 +101,6 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
           </select>
         </div>
 
-        {/* Rate Toggle + Input */}
         <div>
           <label className="block text-sm font-medium text-white mb-1.5">
             Your Rate
@@ -115,21 +125,59 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
               Per Hour
             </button>
           </div>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
-            <input
-              type="number"
-              min="0"
-              value={rateValue}
-              onChange={(e) => setRateValue(e.target.value)}
-              placeholder={rateType === 'fixed' ? '500' : '25'}
-              className="w-full border border-white/10 rounded-lg pl-7 pr-16 py-2.5 text-sm text-white bg-[#0D1220] placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
-              {rateType === 'fixed' ? 'USD' : 'USD/hr'}
-            </span>
+          {/* 🎯 NAYA CODE: Clean Rate Field with External Buttons */}
+          <div className="flex items-center gap-2">
+            
+            {/* Main Input Field */}
+            <div className="flex-1 flex items-center border border-white/10 rounded-lg px-3 py-2 bg-[#0D1220] focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
+              <span className="text-sm text-slate-400">$</span>
+              <input
+                type="number"
+                min="0"
+                value={rateValue}
+                onChange={(e) => setRateValue(e.target.value)}
+                placeholder={rateType === 'fixed' ? '500' : '25'}
+                // Tailwind classes to hide default browser arrows and remove background
+                className="w-full bg-transparent px-1 py-0.5 text-sm text-white placeholder-slate-600 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <span className="text-xs text-slate-500 whitespace-nowrap ml-2">
+                {rateType === 'fixed' ? 'USD' : 'USD/hr'}
+              </span>
+            </div>
+
+            {/* Custom + / - Buttons */}
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => setRateValue(prev => String(Math.max(0, Number(prev || 0) - 1)))}
+                className="flex items-center justify-center w-9 h-[42px] rounded-lg border border-white/10 bg-[#0D1220] text-slate-400 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all focus:outline-none"
+              >
+                -
+              </button>
+              <button
+                type="button"
+                onClick={() => setRateValue(prev => String(Number(prev || 0) + 1))}
+                className="flex items-center justify-center w-9 h-[42px] rounded-lg border border-white/10 bg-[#0D1220] text-slate-400 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all focus:outline-none"
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* 🎯 Naya Field: Client Name */}
+      <div>
+        <label className="block text-sm font-medium text-white mb-1.5">
+          Client Name <span className="text-slate-400 font-normal">(Optional)</span>
+        </label>
+        <input
+          type="text"
+          value={clientName}
+          onChange={(e) => setClientName(e.target.value)}
+          placeholder="e.g. John (leave blank if unknown)"
+          className="w-full border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white bg-[#0D1220] placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
       </div>
 
       {/* Job Description */}
@@ -156,15 +204,41 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
       <div>
         <label className="block text-sm font-medium text-white mb-1.5">
           Past Experience / Portfolio{' '}
-          <span className="text-slate-400 font-normal">(optional)</span>
+          {/* 🎯 Naya Hint */}
+          <span className="text-slate-400 font-normal">(Numbers & specific results work best)</span>
         </label>
         <input
           type="text"
           value={pastExperience}
           onChange={(e) => setPastExperience(e.target.value)}
-          placeholder="e.g. Built an e-commerce site with 200+ products"
+          placeholder="e.g. Built a Next.js site, improved load time by 40%"
           className="w-full border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white bg-[#0D1220] placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
+      </div>
+
+      {/* 🎯 Naya Field: Loom & Guarantee Toggles */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Loom Toggle */}
+        <div 
+          onClick={() => setIncludeLoom(!includeLoom)}
+          className="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-[#0D1220] cursor-pointer hover:border-white/30 transition-all select-none"
+        >
+          <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${includeLoom ? 'bg-indigo-600' : 'bg-slate-700'}`}>
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${includeLoom ? 'translate-x-4' : 'translate-x-1'}`} />
+          </div>
+          <span className="text-sm text-white font-medium">Offer Loom Video</span>
+        </div>
+        
+        {/* Guarantee Toggle */}
+        <div 
+          onClick={() => setIncludeGuarantee(!includeGuarantee)}
+          className="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-[#0D1220] cursor-pointer hover:border-white/30 transition-all select-none"
+        >
+          <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${includeGuarantee ? 'bg-indigo-600' : 'bg-slate-700'}`}>
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${includeGuarantee ? 'translate-x-4' : 'translate-x-1'}`} />
+          </div>
+          <span className="text-sm text-white font-medium">Include Guarantee</span>
+        </div>
       </div>
 
       {/* Tone */}
@@ -185,13 +259,13 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
         </div>
       </div>
 
-      {/* targetRange indicator */}
+      {/* 🎯 Updated targetRange indicator */}
       <div className="flex items-center gap-2 text-xs text-slate-500 bg-[#0D1220] rounded-lg px-3 py-2 border border-white/[0.06]">
         <span>📏</span>
         <span>
           Target length:{' '}
           <strong className="text-indigo-400">
-            {targetRange === 'short' ? '80–99 words' : '130–150 words'}
+            {targetRange === 'short' ? 'Short Punchy (50–65 words)' : 'Deep Specific (300–400 words)'}
           </strong>
           {' '}— change from Length dropdown above
         </span>

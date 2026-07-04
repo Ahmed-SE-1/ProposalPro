@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import ProposalForm from "@/components/ProposalForm";
 import CoverLetterForm from "@/components/CoverLetterForm";
 import EmailForm from "@/components/EmailForm";
+import Link from "next/link";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Tab = "proposal" | "cover-letter" | "email";
@@ -18,7 +19,16 @@ interface TabConfig {
 
 // ── Icons (inline SVG to avoid extra deps) ────────────────────────────────────
 const IconProposal = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <polyline points="14 2 14 8 20 8" />
     <line x1="16" y1="13" x2="8" y2="13" />
@@ -28,14 +38,32 @@ const IconProposal = () => (
 );
 
 const IconCoverLetter = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
     <polyline points="22,6 12,13 2,6" />
   </svg>
 );
 
 const IconEmail = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <circle cx="12" cy="12" r="4" />
     <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" />
   </svg>
@@ -54,7 +82,14 @@ const IconZap = () => (
 );
 
 const IconShield = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
@@ -122,10 +157,10 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<Tab>("proposal");
   const [prevTab, setPrevTab] = useState<Tab | null>(null);
   const [animating, setAnimating] = useState(false);
-  
+
   // 🎯 New state for proposal length control
   const [targetRange, setTargetRange] = useState<"short" | "long">("short");
-  
+
   const contentRef = useRef<HTMLDivElement>(null);
 
   const typewritten = useTypewriter([
@@ -147,20 +182,28 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#070B14] text-white">
-
       {/* ── Ambient background glows ─────────────────────────────────────── */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden>
+      <div
+        className="fixed inset-0 pointer-events-none overflow-hidden"
+        aria-hidden
+      >
         <div
           className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full opacity-[0.07]"
-          style={{ background: "radial-gradient(circle, #6366F1 0%, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #6366F1 0%, transparent 70%)",
+          }}
         />
         <div
           className="absolute top-1/3 -right-60 w-[500px] h-[500px] rounded-full opacity-[0.05]"
-          style={{ background: "radial-gradient(circle, #F59E0B 0%, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #F59E0B 0%, transparent 70%)",
+          }}
         />
         <div
           className="absolute bottom-0 left-1/3 w-[400px] h-[400px] rounded-full opacity-[0.04]"
-          style={{ background: "radial-gradient(circle, #6366F1 0%, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #6366F1 0%, transparent 70%)",
+          }}
         />
       </div>
 
@@ -178,14 +221,24 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-6 text-sm text-slate-400">
-            <a href="#" className="hover:text-white transition-colors">How it works</a>
-            <a href="#" className="hover:text-white transition-colors">Tips</a>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/how-it-works"
+              className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            >
+              How it works
+            </Link>
+            <Link
+              href="/tips"
+              className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            >
+              Tips
+            </Link>
+            {/* Aapka 'Open Upwork' wala button */}
             <a
               href="https://upwork.com"
               target="_blank"
-              rel="noopener noreferrer"
-              className="px-3.5 py-1.5 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors"
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 transition-all"
             >
               Open Upwork ↗
             </a>
@@ -207,7 +260,8 @@ export default function HomePage() {
             <span
               className="bg-clip-text text-transparent"
               style={{
-                backgroundImage: "linear-gradient(135deg, #818CF8 0%, #6366F1 40%, #A78BFA 100%)",
+                backgroundImage:
+                  "linear-gradient(135deg, #818CF8 0%, #6366F1 40%, #A78BFA 100%)",
               }}
             >
               {typewritten}
@@ -220,8 +274,8 @@ export default function HomePage() {
         </h1>
 
         <p className="max-w-xl mx-auto text-slate-400 text-base sm:text-lg leading-relaxed mb-10">
-          Built for Pakistani freelancers. Paste a job description, fill in your skills — 
-          get a high-converting pitch in under 30 seconds.
+          Built for Pakistani freelancers. Paste a job description, fill in your
+          skills — get a high-converting pitch in under 30 seconds.
         </p>
 
         <div className="inline-flex flex-wrap justify-center gap-6 sm:gap-10">
@@ -229,7 +283,9 @@ export default function HomePage() {
             <div key={s.label} className="flex items-center gap-2">
               <span className="text-amber-400">{s.icon}</span>
               <div className="text-left">
-                <div className="text-sm font-bold text-white leading-none">{s.value}</div>
+                <div className="text-sm font-bold text-white leading-none">
+                  {s.value}
+                </div>
                 <div className="text-xs text-slate-500 mt-0.5">{s.label}</div>
               </div>
             </div>
@@ -239,10 +295,8 @@ export default function HomePage() {
 
       {/* ── Main tool area ────────────────────────────────────────────────── */}
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pb-24">
-
         {/* ── Tab bar wrapper with alignment controls ─────────────────────── */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-          
           {/* Tab buttons */}
           <div className="flex items-center gap-2 p-1 rounded-xl bg-[#0D1220] border border-white/[0.07] w-fit">
             {TABS.map((tab) => {
@@ -263,7 +317,8 @@ export default function HomePage() {
                     <span
                       className="absolute inset-0 rounded-lg"
                       style={{
-                        background: "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)",
+                        background:
+                          "linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)",
                         boxShadow: "0 0 20px rgba(99,102,241,0.35)",
                       }}
                       aria-hidden
@@ -286,14 +341,22 @@ export default function HomePage() {
           {/* 🎯 Length Dropdown - Only visible when "proposal" is active */}
           {activeTab === "proposal" && (
             <div className="animate-fadeIn flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0D1220] border border-white/[0.07]">
-              <span className="text-xs text-slate-400 font-medium whitespace-nowrap pl-1">Length:</span>
+              <span className="text-xs text-slate-400 font-medium whitespace-nowrap pl-1">
+                Length:
+              </span>
               <select
                 value={targetRange}
-                onChange={(e) => setTargetRange(e.target.value as "short" | "long")}
+                onChange={(e) =>
+                  setTargetRange(e.target.value as "short" | "long")
+                }
                 className="bg-transparent text-xs font-semibold text-indigo-400 outline-none cursor-pointer pr-2 border-none focus:ring-0"
               >
-                <option value="short" className="bg-[#070B14] text-white">Short (80-99 words)</option>
-                <option value="long" className="bg-[#070B14] text-white">Long (130-150 words)</option>
+                <option value="short" className="bg-[#070B14] text-white">
+                  Short Punchy (50-65 words)
+                </option>
+                <option value="long" className="bg-[#070B14] text-white">
+                  Deep Specific (300-400 words)
+                </option>
               </select>
             </div>
           )}
@@ -306,7 +369,7 @@ export default function HomePage() {
               <p key={tab.id} className="text-sm text-slate-500 animate-fadeIn">
                 {tab.description}
               </p>
-            ) : null
+            ) : null,
           )}
         </div>
 
@@ -316,7 +379,9 @@ export default function HomePage() {
           className={`transition-opacity duration-200 ${animating ? "opacity-0" : "opacity-100"}`}
         >
           {/* 💡 FIX: Passed targetRange as a prop down to ProposalForm */}
-          {activeTab === "proposal" && <ProposalForm targetRange={targetRange} />}
+          {activeTab === "proposal" && (
+            <ProposalForm targetRange={targetRange} />
+          )}
           {activeTab === "cover-letter" && <CoverLetterForm />}
           {activeTab === "email" && <EmailForm />}
         </div>
@@ -329,8 +394,12 @@ export default function HomePage() {
             © {new Date().getFullYear()} ProposalPro — Built for 🇵🇰 freelancers
           </span>
           <div className="flex items-center gap-4">
-            <a href="#" className="hover:text-slate-400 transition-colors">Privacy</a>
-            <a href="#" className="hover:text-slate-400 transition-colors">Terms</a>
+            <a href="#" className="hover:text-slate-400 transition-colors">
+              Privacy
+            </a>
+            <a href="#" className="hover:text-slate-400 transition-colors">
+              Terms
+            </a>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               All systems operational
@@ -341,12 +410,23 @@ export default function HomePage() {
 
       <style jsx global>{`
         @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0;
+          }
         }
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         .animate-fadeIn {
           animation: fadeIn 0.25s ease forwards;

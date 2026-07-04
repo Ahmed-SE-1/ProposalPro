@@ -1,3 +1,4 @@
+import bannedPhrases from '@/config/banned-phrases.json';
 export function scoreProposal(
   text: string,
   type: 'proposal' | 'cover-letter' | 'email'
@@ -17,24 +18,30 @@ export function scoreProposal(
 
   // ─── PROPOSAL SIGNALS ────────────────────────────────
   if (type === 'proposal') {
-    // Word count sweet spot
-    if (wordCount >= 80 && wordCount <= 150) score += 10
+    // 🎯 FIX: Bimodal Word count sweet spot (Short: 50-90, Deep: 250-400)
+    if ((wordCount >= 40 && wordCount <= 100) || (wordCount >= 250 && wordCount <= 450)) {
+      score += 10
+    } else {
+      score -= 5 // Penalty for 'dead middle' sizes which clients ignore
+    }
 
-    // Research-backed phrase
-    if (lower.includes('happy to') || lower.includes('feel free')) score += 8
+    // 🎯 FIX: Specificity Score (Real numbers/metrics presence)
+    if (/\d+%|\d+x|\$\d+|\d+ days|\d+ hours/i.test(text)) score += 8
+
+    // 🎯 FIX: Guarantee/Loom offer detection (Bonus)
+    if (lower.includes('loom') || lower.includes('video') || lower.includes('guarantee') || lower.includes('refund')) score += 5
 
     // Shows relevant experience
-    if (lower.includes('similar project') || lower.includes('similar work')) score += 7
+    if (lower.includes('similar project') || lower.includes('similar work') || lower.includes('recently')) score += 5
 
-    // Hard penalties
-    if (lower.includes('calendly') || lower.includes('discovery call')) score -= 15
-    if (lower.includes('best regards')) score -= 5
-    if (lower.includes('hardworking') || lower.includes('team player')) score -= 10
-    if (
-      lower.includes('excited to apply') ||
-      lower.includes('i am confident') ||
-      lower.includes("i'm confident")
-    ) score -= 12
+    // 🎯 FIX: Hard penalties (Dynamically from JSON)
+    bannedPhrases.proposal.forEach(phrase => {
+      if (lower.includes(phrase.toLowerCase())) score -= 15;
+    });
+
+    bannedPhrases.universal.forEach(phrase => {
+      if (lower.includes(phrase.toLowerCase())) score -= 12;
+    });
   }
 
   // ─── COVER LETTER SIGNALS ────────────────────────────
@@ -118,26 +125,24 @@ export function getImprovementTips(
 
   // Proposal tips
   if (type === 'proposal') {
-    if (wordCount < 80) {
-      tips.push(`Too short (${wordCount} words) — aim for 80–150 words for best results.`)
-    } else if (wordCount > 150) {
-      tips.push(`Too long (${wordCount} words) — trim to under 150 words. Clients skim, not read.`)
+    if (wordCount > 100 && wordCount < 250) {
+      tips.push(`Warning: ${wordCount} words is the "dead middle". Clients prefer Short (<90) or Deep (>250) proposals.`)
     }
 
-    if (!lower.includes('happy to') && !lower.includes('feel free')) {
-      tips.push('Add "happy to answer any questions you may have" — research shows +5.89pp reply rate boost.')
+    if (!/\d+%|\d+x|\$\d+|\d+ days|\d+ hours/i.test(text)) {
+      tips.push('Lacking specificity: Add a real metric (e.g. "improved by 40%") or specific timeline to stand out.')
     }
 
-    if (lower.includes('calendly') || lower.includes('discovery call')) {
-      tips.push('Remove "Calendly" or "discovery call" — these phrases kill reply rates drastically.')
+    if (!lower.includes('loom') && !lower.includes('video')) {
+      tips.push('Tip: Offering a quick 1-minute Loom video increases client trust.')
     }
 
-    if (lower.includes('hardworking') || lower.includes('team player') || lower.includes('i am confident')) {
-      tips.push('Remove AI clichés like "hardworking", "team player", or "I am confident" — they signal generic proposals.')
+    if (lower.includes('thanks for posting') || lower.includes('many freelancers')) {
+      tips.push('Remove "Thanks for posting" or "Many freelancers" — these are known AI hallmarks.')
     }
 
-    if (!lower.includes('similar project') && !lower.includes('similar work')) {
-      tips.push('Mention a similar project or relevant past work to build instant credibility.')
+    if (lower.includes('not a bot') || lower.includes('ai-generated')) {
+      tips.push('Never mention AI or "not a bot" — it actually triggers client suspicion instead of fixing it.')
     }
   }
 
@@ -173,6 +178,5 @@ export function getImprovementTips(
     }
   }
 
-  // Return max 3 tips
   return tips.slice(0, 3)
 }

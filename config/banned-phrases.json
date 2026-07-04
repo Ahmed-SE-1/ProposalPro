@@ -1,0 +1,44 @@
+{
+  "universal": [
+    "not a bot",
+    "ai-generated",
+    "chatgpt",
+    "hardworking",
+    "team player",
+    "passionate about",
+    "i am writing to",
+    "i am confident",
+    "i'm confident"
+  ],
+  "proposal": [
+    "discovery call",
+    "calendly",
+    "best regards",
+    "greetings",
+    "dear sir/madam",
+    "i hope this message finds you well",
+    "additionally,",
+    "furthermore,",
+    "moreover,",
+    "as per your requirements",
+    "many freelancers",
+    "tailored to your needs",
+    "thanks for posting",
+    "leverage"
+  ],
+  "coverLetter": [
+    "passion for excellence",
+    "think outside the box",
+    "go-getter",
+    "results-driven",
+    "detail-oriented",
+    "quick learner",
+    "to whom it may concern",
+    "i believe i would be a great fit"
+  ],
+  "email": [
+    "express my interest",
+    "please find attached my resume",
+    "i look forward to your response"
+  ]
+}

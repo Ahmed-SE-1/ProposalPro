@@ -1,3 +1,5 @@
+import { TEMPERATURE_CONFIG } from '@/lib/prompts'
+
 export async function callGroq(
   systemPrompt: string,
   userPrompt: string
@@ -18,8 +20,10 @@ export async function callGroq(
         { role: 'user', content: userPrompt },
       ],
       max_tokens: 1000,
-      temperature: 0.7,
+      temperature: TEMPERATURE_CONFIG.groq.temperature, // 👈 FIX: Hooked to config
+      top_p: TEMPERATURE_CONFIG.groq.topP,             // 👈 FIX: Hooked to config
     }),
+    cache: 'no-store' // 👈 FIX: Never cache responses
   })
 
   if (!res.ok) {

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { Copy, Check, RefreshCw, Loader2 } from 'lucide-react'
-import { scoreProposal, getImprovementTips } from '@/lib/score'
+import { useState, useEffect } from 'react'
+import { Copy, Check, RefreshCw, Loader2, Edit3 } from 'lucide-react'
+import { scoreProposal, getImprovementTips } from '@/lib/score' // Note: Ensure this path is correct
 import QualityScore from './QualityScore'
 
 interface OutputCardProps {
@@ -19,20 +19,29 @@ export default function OutputCard({
   onRegenerate,
 }: OutputCardProps) {
   const [copied, setCopied] = useState(false)
+  
+  // 🎯 Naya State: Editable Output ke liye
+  const [editedOutput, setEditedOutput] = useState(output)
 
-  const wordCount = output.trim().split(/\s+/).filter(Boolean).length
+  // Jab backend se naya output aaye, textarea update ho jaye
+  useEffect(() => {
+    setEditedOutput(output)
+  }, [output])
+
+  const wordCount = editedOutput.trim().split(/\s+/).filter(Boolean).length
   const readTimeSec = Math.ceil((wordCount / 238) * 60)
-  const score = output ? scoreProposal(output, type) : 0
-  const tips = output ? getImprovementTips(output, type) : []
+  const score = editedOutput ? scoreProposal(editedOutput, type) : 0
+  const tips = editedOutput ? getImprovementTips(editedOutput, type) : []
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(output)
+      // 👈 Ab 'editedOutput' copy hoga
+      await navigator.clipboard.writeText(editedOutput)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
       const textarea = document.createElement('textarea')
-      textarea.value = output
+      textarea.value = editedOutput
       document.body.appendChild(textarea)
       textarea.select()
       document.execCommand('copy')
@@ -60,15 +69,16 @@ export default function OutputCard({
       <QualityScore score={score} tips={tips} type={type} />
 
       {/* Output Box */}
-      <div className="rounded-xl border border-white/[0.08] bg-[#0D1220] overflow-hidden">
+      <div className="rounded-xl border border-white/[0.08] bg-[#0D1220] overflow-hidden focus-within:ring-1 focus-within:ring-indigo-500/50 transition-all">
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-white capitalize">
+            <span className="text-sm font-semibold text-white capitalize flex items-center gap-2">
               {type === 'cover-letter' ? 'Cover Letter'
                 : type === 'email' ? 'Email'
                 : 'Proposal'}
+              <Edit3 className="w-3.5 h-3.5 text-slate-500" />
             </span>
             <span className="text-xs text-slate-500">
               {wordCount} words · ~{readTimeSec}s read
@@ -99,14 +109,22 @@ export default function OutputCard({
           </div>
         </div>
 
-        {/* Content — THIS was the bug: text-[#1A1A1A] is near-black, invisible on dark bg */}
-        <div className="p-4 max-h-96 overflow-y-auto">
-          <p className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">
-            {output}
-          </p>
+        {/* 🎯 Naya Edit Before Copy Area */}
+        <div className="relative group">
+          <textarea
+            value={editedOutput}
+            onChange={(e) => setEditedOutput(e.target.value)}
+            className="w-full min-h-[250px] max-h-96 p-4 bg-transparent text-sm text-slate-200 leading-relaxed resize-y focus:outline-none"
+            spellCheck={false}
+          />
         </div>
-
       </div>
+
+      {/* 🎯 Naya Tip / Disclaimer Line */}
+      <p className="text-xs text-slate-500 text-center flex items-center justify-center gap-1.5 px-2">
+        <span className="text-amber-400/80">💡</span>
+        Proposal text is one factor — category choice and submitting within 60 minutes of posting matter just as much.
+      </p>
     </div>
   )
 }

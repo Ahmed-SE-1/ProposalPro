@@ -1,3 +1,5 @@
+import { TEMPERATURE_CONFIG, isWordCountAcceptable, ProposalMode } from '@/lib/prompts'
+
 export async function callGemini(
   systemPrompt: string,
   userPrompt: string
@@ -12,28 +14,15 @@ export async function callGemini(
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
 
   let attempts = 0
-  const maxAttempts = 4 
+  const maxAttempts = 2 // 👈 FIX: Reduced from 4 to 2 to prevent timeouts
+  let bestAttemptText = '' // 👈 Store the last attempt for graceful degradation
 
-  // 1. Determine target ranges safely without crashing on undefined
+  // 1. Determine target mode dynamically for the new validator
   const isShortTarget = safeSystemPrompt.toLowerCase().includes('short') || safeUserPrompt.toLowerCase().includes('short')
-  const minWords = isShortTarget ? 80 : 130
-  const maxWords = isShortTarget ? 99 : 150
+  const mode: ProposalMode = isShortTarget ? 'short' : 'deep'
 
-  // 2. CLEAN UP & OVERRIDE conflicting system prompt rules dynamically
-  let sanitizedSystemPrompt = safeSystemPrompt
-    .replace(/Do NOT count words, just ensure it is structured and concise\./gi, '')
-    .replace(/2-3 bullet points/gi, '2-3 short sentences in plain text')
-
-  // 3. Append constraints securely
-  const strictSystemPrompt = `
-${sanitizedSystemPrompt}
-
-CRITICAL FORMATTING AND LENGTH CONTROL:
-- Your output MUST be strictly between ${minWords} and ${maxWords} words long.
-- DO NOT use any bullet points, asterisks (*), dashes (-), or lists. Write ONLY in plain text paragraphs.
-- Keep your sentences concise, compact, and highly professional to stay inside the ${minWords}-${maxWords} word bracket.
-- Terminate your response cleanly with the single smart question within the limit. Do not overflow.
-`.trim()
+  // The v3 prompt is strictly controlled now, so we just use the generated system prompt directly
+  const strictSystemPrompt = safeSystemPrompt
 
   while (attempts < maxAttempts) {
     attempts++
@@ -50,7 +39,8 @@ CRITICAL FORMATTING AND LENGTH CONTROL:
       ],
       generationConfig: {
         maxOutputTokens: 1200,
-        temperature: 0.5, 
+        temperature: TEMPERATURE_CONFIG.gemini.temperature, // 👈 FIX: Hooked to config
+        topP: TEMPERATURE_CONFIG.gemini.topP,               // 👈 FIX: Hooked to config
       },
     }
 
@@ -59,6 +49,7 @@ CRITICAL FORMATTING AND LENGTH CONTROL:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        cache: 'no-store' // 👈 FIX: Never cache responses
       })
 
       if (!res.ok) {
@@ -75,26 +66,36 @@ CRITICAL FORMATTING AND LENGTH CONTROL:
 
       if (!text) {
         console.warn(`[Attempt ${attempts}] Gemini returned empty response parts.`)
-        if (attempts >= maxAttempts) throw new Error('Gemini returned empty response')
+        if (attempts >= maxAttempts) {
+          if (bestAttemptText) return bestAttemptText; // Graceful degradation
+          throw new Error('Gemini returned empty response')
+        }
         continue
       }
 
       const trimmedText = text.trim()
-      const wordCount = trimmedText.split(/\s+/).filter(Boolean).length // Safe and clean type filtering
+      bestAttemptText = trimmedText // Save this attempt in case the next one fails
+      const wordCount = trimmedText.split(/\s+/).filter(Boolean).length
 
       console.log("=========================================")
       console.log(`🔄 ATTEMPT: ${attempts}/${maxAttempts}`)
       console.log("🛑 GEMINI FINISH REASON:", finishReason)
-      console.log("📝 TEXT LENGTH (CHARS):", trimmedText.length)
       console.log("🔢 GENERATED WORD COUNT:", wordCount)
-      console.log(`🎯 TARGET RANGE: ${minWords}-${maxWords} words`)
+      console.log(`🎯 TARGET MODE: ${mode.toUpperCase()}`)
       console.log("=========================================")
 
       if (finishReason === 'MAX_TOKENS') {
+        if (attempts >= maxAttempts) return bestAttemptText;
         continue
       }
 
-      if (wordCount < minWords || wordCount > maxWords) {
+      // 👈 FIX: Use the new lenient validation helper instead of exact bounds
+      if (!isWordCountAcceptable(trimmedText, mode)) {
+        console.warn(`Word count ${wordCount} is outside tolerance for mode: ${mode}.`)
+        if (attempts >= maxAttempts) {
+          console.log(`Max attempts reached. Returning closest attempt (${wordCount} words) instead of failing.`)
+          return bestAttemptText; // Graceful degradation instead of crashing
+        }
         continue
       }
 
@@ -102,9 +103,12 @@ CRITICAL FORMATTING AND LENGTH CONTROL:
 
     } catch (loopError) {
       console.error(`Unexpected execution error on attempt ${attempts}:`, loopError)
-      if (attempts >= maxAttempts) throw loopError
+      if (attempts >= maxAttempts) {
+        if (bestAttemptText) return bestAttemptText;
+        throw loopError
+      }
     }
   }
 
-  throw new Error(`Failed to generate a valid proposal within the required word count constraint (${minWords}-${maxWords} words) after ${maxAttempts} attempts.`)
+  return bestAttemptText;
 }
