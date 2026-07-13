@@ -19,7 +19,7 @@ export async function callGroq(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      max_tokens: 1000,
+      max_tokens: 4096,
       temperature: TEMPERATURE_CONFIG.groq.temperature, // 👈 FIX: Hooked to config
       top_p: TEMPERATURE_CONFIG.groq.topP,             // 👈 FIX: Hooked to config
     }),

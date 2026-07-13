@@ -38,7 +38,7 @@ export async function callGemini(
         },
       ],
       generationConfig: {
-        maxOutputTokens: 1200,
+        maxOutputTokens: 4096,
         temperature: TEMPERATURE_CONFIG.gemini.temperature, // 👈 FIX: Hooked to config
         topP: TEMPERATURE_CONFIG.gemini.topP,               // 👈 FIX: Hooked to config
       },
