@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import OutputCard from './OutputCard'
+import { getDeviceFingerprint } from '@/lib/fingerprint'
 
 const FOUND_VIA_OPTIONS = ['LinkedIn', 'Company Website', 'Referral', 'Indeed', 'Other']
 const ATTACHMENT_OPTIONS = ['Cover Letter', 'Resume', 'Portfolio', 'All']
@@ -36,12 +37,23 @@ export default function EmailForm() {
     setOutput('')
 
     try {
+      const fingerprint = await getDeviceFingerprint()
+
       const res = await fetch('/api/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hrName, companyName, jobTitle, foundVia, yourName, contact, skills, referral, attachments }),
+        body: JSON.stringify({
+          hrName, companyName, jobTitle, foundVia, yourName, contact, skills, referral, attachments,
+          fingerprint,
+        }),
       })
       const data = await res.json()
+
+      if (res.status === 429) {
+        setError(data.message || "Today's free limit has been used up. Please try again tomorrow!")
+        return
+      }
+
       if (!res.ok) { setError(data.error || 'Something went wrong.'); return }
       setOutput(data.email)
     } catch {
@@ -53,7 +65,6 @@ export default function EmailForm() {
 
   return (
     <div className="space-y-5">
-      {/* HR Name + Company */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
@@ -75,7 +86,6 @@ export default function EmailForm() {
         </div>
       </div>
 
-      {/* Job Title + Found Via */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
@@ -96,7 +106,6 @@ export default function EmailForm() {
         </div>
       </div>
 
-      {/* Your Name + Contact */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">Your Full Name</label>
@@ -114,7 +123,6 @@ export default function EmailForm() {
         </div>
       </div>
 
-      {/* Skills */}
       <div>
         <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
           Key Skills <span className="text-[#6B7280] font-normal">(optional)</span>
@@ -125,7 +133,6 @@ export default function EmailForm() {
         />
       </div>
 
-      {/* Referral */}
       <div>
         <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
           Referral Name{' '}
@@ -137,7 +144,6 @@ export default function EmailForm() {
         />
       </div>
 
-      {/* Attachments */}
       <div>
         <label className="block text-sm font-medium text-[#1A1A1A] mb-2">
           Attachments to Mention
@@ -163,12 +169,6 @@ export default function EmailForm() {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
       <button
         onClick={handleSubmit}
         disabled={isLoading || !companyName.trim() || !jobTitle.trim()}
@@ -177,7 +177,13 @@ export default function EmailForm() {
         {isLoading ? 'Generating...' : '✨ Generate Email'}
       </button>
 
-      <OutputCard output={output} type="email" isLoading={isLoading} onRegenerate={handleSubmit} />
+      <OutputCard
+              output={output}
+              type="email"
+              isLoading={isLoading}
+              onRegenerate={handleSubmit}
+              error={error || null}
+            />
     </div>
   )
 }

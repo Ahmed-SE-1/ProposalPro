@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateContent } from '@/lib/router'
 import { getCoverLetterSystemPrompt } from '@/lib/prompts'
-import { addToQueue } from '@/lib/rateLimit'
+import { addToQueue, checkRateLimit } from '@/lib/rateLimit'
 
-// 🎯 Ensures this route is never cached
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
@@ -19,7 +18,26 @@ export async function POST(req: NextRequest) {
       whyCompany,
       tone,
       currentDate,
+      fingerprint
     } = body
+
+    // ─── Rate Limit Check ──────────────────────────────
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] 
+      ?? req.headers.get('x-real-ip') 
+      ?? 'unknown';
+
+    const rateCheck = await checkRateLimit(fingerprint, ip);
+
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'RATE_LIMIT_EXCEEDED',
+          message: 'Aaj ka free limit khatam ho gaya hai. Kal wapas try karein!',
+          resetAt: rateCheck.resetAt,
+        },
+        { status: 429 }
+      );
+    }
 
     if (!jobDescription || jobDescription.trim().length < 50) {
       return NextResponse.json(
@@ -35,7 +53,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 🎯 Generate the dynamic system prompt using the new v3 function
     const systemPrompt = getCoverLetterSystemPrompt({
       candidateName: yourName,
       jobTitle: jobTitle,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateContent } from '@/lib/router'
+import { checkRateLimit } from '@/lib/rateLimit'
 import { addToQueue } from '@/lib/rateLimit'
 import { 
   getProposalSystemPrompt, 
@@ -12,6 +13,8 @@ import {
   ProposalCategory 
 } from '@/lib/prompts'
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -23,10 +26,29 @@ export async function POST(req: NextRequest) {
       jobDescription,
       pastExperience,
       tone,
-      targetRange, // 'short' ya 'long' (jisko hum 'deep' mein map karenge)
-      category,    // Frontend se 'web-dev' | 'engineering' | 'writing' | 'va' aayega
-      clientName   // Frontend se extracted client name
+      targetRange,
+      category,
+      clientName,
+      fingerprint
     } = body
+
+    // ─── Rate Limit Check (FIRST, before anything else) ───
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] 
+      ?? req.headers.get('x-real-ip') 
+      ?? 'unknown';
+
+    const rateCheck = await checkRateLimit(fingerprint, ip);
+
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'RATE_LIMIT_EXCEEDED',
+          message: 'Aaj ka free limit khatam ho gaya hai. Kal wapas try karein!',
+          resetAt: rateCheck.resetAt,
+        },
+        { status: 429 }
+      );
+    }
 
     // ─── Validation ───────────────────────────────────
     if (!jobDescription || jobDescription.trim().length < 50) {
@@ -52,16 +74,14 @@ export async function POST(req: NextRequest) {
     const promptParams = {
       mode,
       clientName,
-      category: category as ProposalCategory, // Safe type casting
+      category: category as ProposalCategory,
       hookStyleId: randomHookId,
       fewShotExample: randomFewShot,
       closingPhrase: randomClosing,
       hasMultipleQuestions
     };
 
-    // Full Gemini v3.2 Prompt
     const systemPrompt = getProposalSystemPrompt(promptParams);
-    // Trimmed Llama/Groq Prompt (for fallback)
     const fallbackGroqPrompt = getProposalSystemPromptGroqLite(promptParams);
 
     const userPrompt = `
@@ -82,7 +102,6 @@ Write the proposal now. Follow all rules exactly.
 
     // ─── 5. Generate ──────────────────────────────────
     const proposal = await addToQueue(() =>
-      // 💡 Naya architecture: Dono prompts pass kar rahe hain!
       generateContent(systemPrompt, userPrompt, fallbackGroqPrompt)
     )
 

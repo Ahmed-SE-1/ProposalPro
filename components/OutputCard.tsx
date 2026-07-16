@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Copy, Check, RefreshCw, Loader2, Edit3 } from 'lucide-react'
+import { Copy, Check, RefreshCw, Loader2, Edit3, AlertTriangle } from 'lucide-react'
 import { scoreProposal, getImprovementTips } from '@/lib/score' // Note: Ensure this path is correct
 import QualityScore from './QualityScore'
 
@@ -10,6 +10,7 @@ interface OutputCardProps {
   type: 'proposal' | 'cover-letter' | 'email'
   isLoading: boolean
   onRegenerate: () => void
+  error?: string | null // 🎯 Naya prop: error message backend se
 }
 
 export default function OutputCard({
@@ -17,9 +18,10 @@ export default function OutputCard({
   type,
   isLoading,
   onRegenerate,
+  error = null,
 }: OutputCardProps) {
   const [copied, setCopied] = useState(false)
-  
+
   // 🎯 Naya State: Editable Output ke liye
   const [editedOutput, setEditedOutput] = useState(output)
 
@@ -57,6 +59,34 @@ export default function OutputCard({
         <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
         <p className="text-sm text-slate-400">Generating your {type}...</p>
         <p className="text-xs text-slate-500">This takes 5–10 seconds</p>
+      </div>
+    )
+  }
+
+  // 🎯 Naya Error State: agar backend se error aaya (e.g. 429 rate limit)
+  if (error) {
+    const isRateLimit = error.toLowerCase().includes('rate limit') || error.includes('429')
+
+    return (
+      <div className="mt-6 rounded-xl border border-red-500/20 bg-red-500/[0.04] p-8 flex flex-col items-center justify-center gap-3 text-center">
+        <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+          <AlertTriangle className="w-5 h-5 text-red-400" />
+        </div>
+        <p className="text-sm font-medium text-red-300">
+          {isRateLimit ? 'Too many requests' : 'Something went wrong'}
+        </p>
+        <p className="text-xs text-slate-500 max-w-sm">
+          {isRateLimit
+            ? 'You\u2019ve hit the rate limit. Please wait a moment before trying again.'
+            : error}
+        </p>
+        <button
+          onClick={onRegenerate}
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium bg-white/[0.06] text-slate-200 hover:bg-white/[0.1] transition-colors mt-1"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          Try Again
+        </button>
       </div>
     )
   }

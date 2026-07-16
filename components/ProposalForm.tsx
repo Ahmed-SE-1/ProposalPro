@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import SkillPills from './SkillPills'
 import OutputCard from './OutputCard'
+import { getDeviceFingerprint } from '@/lib/fingerprint'
 
 const TONES = ['Professional', 'Friendly', 'Bold']
 const EXPERIENCE_LEVELS = ['Beginner', 'Intermediate', 'Expert']
@@ -16,16 +17,15 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
   const [experience, setExperience] = useState('Intermediate')
   const [rateType, setRateType] = useState<'fixed' | 'hourly'>('hourly')
   const [rateValue, setRateValue] = useState('')
-  
-  // Naye States (Priority 4)
+
   const [clientName, setClientName] = useState('')
   const [includeLoom, setIncludeLoom] = useState(true)
   const [includeGuarantee, setIncludeGuarantee] = useState(true)
-  
+
   const [jobDescription, setJobDescription] = useState('')
   const [pastExperience, setPastExperience] = useState('')
   const [tone, setTone] = useState('Professional')
-  
+
   const [output, setOutput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -47,6 +47,8 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
     setOutput('')
 
     try {
+      const fingerprint = await getDeviceFingerprint()
+
       const res = await fetch('/api/proposal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,13 +61,19 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
           pastExperience,
           tone,
           targetRange,
-          // 👈 Naye parameters backend ko bhej rahe hain
           clientName,
           includeLoom,
-          includeGuarantee
+          includeGuarantee,
+          fingerprint,
         }),
       })
       const data = await res.json()
+
+      if (res.status === 429) {
+        setError(data.message || "Today's free limit has been used up. Please try again tomorrow!")
+        return
+      }
+
       if (!res.ok) { setError(data.error || 'Something went wrong.'); return }
       setOutput(data.proposal)
     } catch {
@@ -125,10 +133,7 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
               Per Hour
             </button>
           </div>
-          {/* 🎯 NAYA CODE: Clean Rate Field with External Buttons */}
           <div className="flex items-center gap-2">
-            
-            {/* Main Input Field */}
             <div className="flex-1 flex items-center border border-white/10 rounded-lg px-3 py-2 bg-[#0D1220] focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
               <span className="text-sm text-slate-400">$</span>
               <input
@@ -137,7 +142,6 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
                 value={rateValue}
                 onChange={(e) => setRateValue(e.target.value)}
                 placeholder={rateType === 'fixed' ? '500' : '25'}
-                // Tailwind classes to hide default browser arrows and remove background
                 className="w-full bg-transparent px-1 py-0.5 text-sm text-white placeholder-slate-600 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
               <span className="text-xs text-slate-500 whitespace-nowrap ml-2">
@@ -145,7 +149,6 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
               </span>
             </div>
 
-            {/* Custom + / - Buttons */}
             <div className="flex gap-1">
               <button
                 type="button"
@@ -166,7 +169,6 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
         </div>
       </div>
 
-      {/* 🎯 Naya Field: Client Name */}
       <div>
         <label className="block text-sm font-medium text-white mb-1.5">
           Client Name <span className="text-slate-400 font-normal">(Optional)</span>
@@ -180,7 +182,6 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
         />
       </div>
 
-      {/* Job Description */}
       <div>
         <div className="flex justify-between items-center mb-1.5">
           <label className="block text-sm font-medium text-white">
@@ -200,11 +201,9 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
         />
       </div>
 
-      {/* Past Experience */}
       <div>
         <label className="block text-sm font-medium text-white mb-1.5">
           Past Experience / Portfolio{' '}
-          {/* 🎯 Naya Hint */}
           <span className="text-slate-400 font-normal">(Numbers & specific results work best)</span>
         </label>
         <input
@@ -216,10 +215,8 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
         />
       </div>
 
-      {/* 🎯 Naya Field: Loom & Guarantee Toggles */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Loom Toggle */}
-        <div 
+        <div
           onClick={() => setIncludeLoom(!includeLoom)}
           className="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-[#0D1220] cursor-pointer hover:border-white/30 transition-all select-none"
         >
@@ -228,9 +225,8 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
           </div>
           <span className="text-sm text-white font-medium">Offer Loom Video</span>
         </div>
-        
-        {/* Guarantee Toggle */}
-        <div 
+
+        <div
           onClick={() => setIncludeGuarantee(!includeGuarantee)}
           className="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-[#0D1220] cursor-pointer hover:border-white/30 transition-all select-none"
         >
@@ -241,7 +237,6 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
         </div>
       </div>
 
-      {/* Tone */}
       <div>
         <label className="block text-sm font-medium text-white mb-2">Tone</label>
         <div className="flex gap-2">
@@ -259,7 +254,6 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
         </div>
       </div>
 
-      {/* 🎯 Updated targetRange indicator */}
       <div className="flex items-center gap-2 text-xs text-slate-500 bg-[#0D1220] rounded-lg px-3 py-2 border border-white/[0.06]">
         <span>📏</span>
         <span>
@@ -271,14 +265,6 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
         </span>
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
-          {error}
-        </div>
-      )}
-
-      {/* Submit */}
       <button
         onClick={handleSubmit}
         disabled={isLoading || jobDescription.length < 50}
@@ -292,6 +278,7 @@ export default function ProposalForm({ targetRange }: ProposalFormProps) {
         type="proposal"
         isLoading={isLoading}
         onRegenerate={handleSubmit}
+        error={error || null}
       />
     </div>
   )

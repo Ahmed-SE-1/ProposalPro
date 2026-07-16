@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import OutputCard from './OutputCard'
+import { getDeviceFingerprint } from '@/lib/fingerprint'
 
 const TONES = ['Professional', 'Friendly', 'Bold']
 
-// ─── Auto current date ─────────────────────────────
 const getCurrentDate = () => {
   return new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -32,6 +32,8 @@ export default function CoverLetterForm() {
     setOutput('')
 
     try {
+      const fingerprint = await getDeviceFingerprint()
+
       const res = await fetch('/api/cover-letter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,10 +45,17 @@ export default function CoverLetterForm() {
           experience,
           whyCompany,
           tone,
-          currentDate: getCurrentDate(), // ← auto inject
+          currentDate: getCurrentDate(),
+          fingerprint,
         }),
       })
       const data = await res.json()
+
+      if (res.status === 429) {
+        setError(data.message || "Today's free limit has been used up. Please try again tomorrow!")
+        return
+      }
+
       if (!res.ok) { setError(data.error || 'Something went wrong.'); return }
       setOutput(data.coverLetter)
     } catch {
@@ -58,7 +67,6 @@ export default function CoverLetterForm() {
 
   return (
     <div className="space-y-5">
-      {/* Job Title + Company */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
@@ -78,7 +86,6 @@ export default function CoverLetterForm() {
         </div>
       </div>
 
-      {/* Your Name */}
       <div>
         <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
           Your Full Name <span className="text-red-500">*</span>
@@ -89,7 +96,6 @@ export default function CoverLetterForm() {
         />
       </div>
 
-      {/* Job Description */}
       <div>
         <div className="flex justify-between items-center mb-1.5">
           <label className="block text-sm font-medium text-[#1A1A1A]">
@@ -107,7 +113,6 @@ export default function CoverLetterForm() {
         />
       </div>
 
-      {/* Experience */}
       <div>
         <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
           Your Experience{' '}
@@ -119,7 +124,6 @@ export default function CoverLetterForm() {
         />
       </div>
 
-      {/* Why Company */}
       <div>
         <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">
           Why This Company?{' '}
@@ -131,7 +135,6 @@ export default function CoverLetterForm() {
         />
       </div>
 
-      {/* Tone */}
       <div>
         <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Tone</label>
         <div className="flex gap-2">
@@ -149,17 +152,10 @@ export default function CoverLetterForm() {
         </div>
       </div>
 
-      {/* Current date preview */}
       <div className="flex items-center gap-2 text-xs text-[#6B7280] bg-gray-50 rounded-lg px-3 py-2 border border-[#E5E7EB]">
         <span>📅</span>
         <span>Cover letter date will be: <strong>{getCurrentDate()}</strong></span>
       </div>
-
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
 
       <button
         onClick={handleSubmit}
@@ -174,6 +170,7 @@ export default function CoverLetterForm() {
         type="cover-letter"
         isLoading={isLoading}
         onRegenerate={handleSubmit}
+        error={error || null}
       />
     </div>
   )

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateContent } from '@/lib/router'
 import { getEmailSystemPrompt } from '@/lib/prompts'
-import { addToQueue } from '@/lib/rateLimit'
+import { addToQueue, checkRateLimit } from '@/lib/rateLimit'
 
-// 🎯 Ensures this route is never cached
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
@@ -20,7 +19,26 @@ export async function POST(req: NextRequest) {
       skills,
       referral,
       attachments,
+      fingerprint
     } = body
+
+    // ─── Rate Limit Check ──────────────────────────────
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] 
+      ?? req.headers.get('x-real-ip') 
+      ?? 'unknown';
+
+    const rateCheck = await checkRateLimit(fingerprint, ip);
+
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'RATE_LIMIT_EXCEEDED',
+          message: 'Aaj ka free limit khatam ho gaya hai. Kal wapas try karein!',
+          resetAt: rateCheck.resetAt,
+        },
+        { status: 429 }
+      );
+    }
 
     // ─── Validation ───────────────────────────────────
     if (!companyName || companyName.trim().length === 0) {
@@ -43,14 +61,12 @@ export async function POST(req: NextRequest) {
         ? attachments.join(', ')
         : 'Resume'
 
-    // 🎯 Generate the dynamic system prompt using the new v3 function
     const systemPrompt = getEmailSystemPrompt({
       referralName: referral,
       applicantName: yourName,
       jobTitle: jobTitle,
     });
 
-    // ─── Build User Prompt ────────────────────────────
     const userPrompt = `
 Generate a job application email based on this information:
 
@@ -78,7 +94,6 @@ IMPORTANT: ${
 Write the email now. Follow all rules exactly. Start with "Subject:" on the first line.
 `
 
-    // ─── Generate ─────────────────────────────────────
     const email = await addToQueue(() =>
       generateContent(systemPrompt, userPrompt)
     )
