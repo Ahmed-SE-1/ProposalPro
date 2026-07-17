@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateContent } from '@/lib/router'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { addToQueue } from '@/lib/rateLimit'
+import { trackQuery } from '@/lib/queryTracker'
 import { 
   getProposalSystemPrompt, 
   getProposalSystemPromptGroqLite, 
@@ -104,6 +105,9 @@ Write the proposal now. Follow all rules exactly.
     const proposal = await addToQueue(() =>
       generateContent(systemPrompt, userPrompt, fallbackGroqPrompt)
     )
+
+    // ─── 6. Track successful query (for admin dashboard) ───
+    await trackQuery()
 
     return NextResponse.json({ proposal })
   } catch (error) {

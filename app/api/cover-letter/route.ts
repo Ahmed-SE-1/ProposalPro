@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateContent } from '@/lib/router'
 import { getCoverLetterSystemPrompt } from '@/lib/prompts'
 import { addToQueue, checkRateLimit } from '@/lib/rateLimit'
+import { trackQuery } from '@/lib/queryTracker'
 
 export const dynamic = 'force-dynamic';
 
@@ -82,6 +83,9 @@ Write the cover letter now. Follow all rules exactly.
     const coverLetter = await addToQueue(() =>
       generateContent(systemPrompt, userPrompt)
     )
+
+    // ─── Track successful query (for admin dashboard) ───
+    await trackQuery()
 
     return NextResponse.json({ coverLetter })
   } catch (error) {

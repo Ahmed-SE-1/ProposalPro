@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateContent } from '@/lib/router'
 import { getEmailSystemPrompt } from '@/lib/prompts'
 import { addToQueue, checkRateLimit } from '@/lib/rateLimit'
+import { trackQuery } from '@/lib/queryTracker'
 
 export const dynamic = 'force-dynamic';
 
@@ -97,6 +98,9 @@ Write the email now. Follow all rules exactly. Start with "Subject:" on the firs
     const email = await addToQueue(() =>
       generateContent(systemPrompt, userPrompt)
     )
+
+    // ─── Track successful query (for admin dashboard) ───
+    await trackQuery()
 
     return NextResponse.json({ email })
   } catch (error) {
