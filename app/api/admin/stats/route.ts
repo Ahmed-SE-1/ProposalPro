@@ -4,7 +4,7 @@ import { getDailyStats } from '@/lib/queryTracker'
 
 // Naye alag dashboard domain ko allow karne ke liye.
 // .env mein set karein: DASHBOARD_ORIGIN=https://your-dashboard.vercel.app
-const ALLOWED_ORIGIN = process.env.DASHBOARD_ORIGIN || '*'
+const ALLOWED_ORIGIN = (process.env.DASHBOARD_ORIGIN || '*').replace(/\/+$/, '')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
