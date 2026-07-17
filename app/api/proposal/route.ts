@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: 'RATE_LIMIT_EXCEEDED',
-          message: 'Aaj ka free limit khatam ho gaya hai. Kal wapas try karein!',
+          message: "Today's free limit has been used up. Please try again tomorrow!",
           resetAt: rateCheck.resetAt,
         },
         { status: 429 }

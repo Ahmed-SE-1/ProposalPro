@@ -73,7 +73,7 @@ export default function OutputCard({
           <AlertTriangle className="w-5 h-5 text-red-400" />
         </div>
         <p className="text-sm font-medium text-red-300">
-          {isRateLimit ? 'Too many requests' : 'Something went wrong'}
+          {isRateLimit ? 'Too many requests' : 'Limit Exceeded.'}
         </p>
         <p className="text-xs text-slate-500 max-w-sm">
           {isRateLimit
